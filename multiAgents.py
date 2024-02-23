@@ -15,7 +15,7 @@
 from util import manhattanDistance
 from game import Directions
 import random, util
-
+import sys
 from game import Agent
 
 class ReflexAgent(Agent):
@@ -143,6 +143,32 @@ class MinimaxAgent(MultiAgentSearchAgent):
     Your minimax agent (question 2)
     """
 
+    def maxValue(self, gameState, depth):
+        currentDepth = depth+1
+        if currentDepth == self.depth or gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+        currMax = -sys.maxsize
+        possibleActions = gameState.getLegalActions(0)
+        for action in possibleActions:
+            nextState = gameState.generateSuccessor(0,action)
+            currMax = max(currMax, self.minValue(nextState, currentDepth, 1))
+        
+        return currMax
+    
+    def minValue(self, gameState, depth, ghostIndex):
+        if gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+        currMin = sys.maxsize
+        possibleActions = gameState.getLegalActions(ghostIndex)
+        for action in possibleActions:
+            nextState = gameState.generateSuccessor(ghostIndex, action)
+            if ghostIndex == (gameState.getNumAgents()-1):
+                currMin = min(currMin, self.maxValue(nextState, depth))
+            else:
+                currMin = min(currMin, self.minValue(nextState, depth, ghostIndex+1))
+
+        return currMin
+    
     def getAction(self, gameState):
         """
         Returns the minimax action from the current gameState using self.depth
@@ -167,7 +193,19 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        possibleActions = gameState.getLegalActions(0)
+        currScore = -sys.maxsize
+        optimalAction = ''
+
+        for action in possibleActions:
+            nextState = gameState.generateSuccessor(0, action)
+            score = self.minValue(nextState, 0 , 1)
+            if score>currScore:
+                optimalAction = action
+                currScore = score
+
+        return optimalAction
+        # util.raiseNotDefined()
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
