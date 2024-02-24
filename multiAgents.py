@@ -211,13 +211,66 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
     """
     Your minimax agent with alpha-beta pruning (question 3)
     """
+    def maxValue(self, gameState, depth, alpha, beta):
+        currentDepth = depth+1
+        currAlpha = alpha
+        if currentDepth == self.depth or gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+        currMax = -sys.maxsize
+        possibleActions = gameState.getLegalActions(0)
+        for action in possibleActions:
+            nextState = gameState.generateSuccessor(0,action)
+            currMax = max(currMax, self.minValue(nextState, currentDepth, 1, currAlpha, beta))
+            if currMax>beta:
+                return currMax
+            currAlpha = max(currAlpha, currMax)
+        return currMax
+    
+    def minValue(self, gameState, depth, ghostIndex, alpha, beta):
+        if gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
+        currMin = sys.maxsize
+        currBeta = beta
+        possibleActions = gameState.getLegalActions(ghostIndex)
+        for action in possibleActions:
+            nextState = gameState.generateSuccessor(ghostIndex, action)
+            if ghostIndex == (gameState.getNumAgents()-1):
+                currMin = min(currMin, self.maxValue(nextState, depth, alpha, currBeta))
+                if currMin<alpha:
+                    return currMin
+                currBeta = min(currBeta, currMin)
+            else:
+                currMin = min(currMin, self.minValue(nextState, depth, ghostIndex+1, alpha, currBeta))
+                if currMin < alpha:
+                    return currMin
+                currBeta = min(currBeta, currMin)
+
+        return currMin
 
     def getAction(self, gameState):
         """
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        possibleActions = gameState.getLegalActions(0)
+        currScore = -sys.maxsize
+        alpha = -sys.maxsize + 1
+        beta = sys.maxsize - 1
+        optimalAction = ''
+
+        for action in possibleActions:
+            nextState = gameState.generateSuccessor(0, action)
+            score = self.minValue(nextState, 0 , 1, alpha, beta)
+            if score>currScore:
+                optimalAction = action
+                currScore = score
+            if score > beta:
+                return optimalAction
+            alpha = max(alpha, score) 
+
+        return optimalAction
+
+        # util.raiseNotDefined()
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
@@ -232,5 +285,39 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        def expectiValue(gameState,agentID,depth):
+            possibleActions=gameState.getLegalActions(agentID)
+            if len(possibleActions)==0:
+                return (self.evaluationFunction(gameState),None)
+
+            l=0
+            Act=None
+            for action in possibleActions:
+                if(agentID==gameState.getNumAgents() -1):
+                    sucsValue=maxValue(gameState.generateSuccessor(agentID,action),depth+1)
+                else:
+                    sucsValue=expectiValue(gameState.generateSuccessor(agentID,action),agentID+1,depth)
+                sucsValue=sucsValue[0]
+                prob=sucsValue/len(possibleActions)
+                l+=prob
+            return(l,Act)
+        
+        def maxValue(gameState,depth):
+            possibleActions=gameState.getLegalActions(0)
+            if len(possibleActions)==0 or gameState.isWin() or gameState.isLose() or depth==self.depth:   
+                return (self.evaluationFunction(gameState),None)                                  
+
+            w=-sys.maxsize - 1
+            Act=None
+
+            for action in possibleActions:
+                sucsValue=expectiValue(gameState.generateSuccessor(0,action),1,depth)
+                sucsValue=sucsValue[0]
+                if(w<sucsValue):
+                    w,Act=sucsValue,action                                                          
+            return(w,Act)
+        
+        maxValue=maxValue(gameState,0)[1]
+        return maxValue
+        # util.raiseNotDefined()
 
